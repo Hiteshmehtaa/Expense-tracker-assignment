@@ -88,3 +88,34 @@ export const parseExpense = async (text: string): Promise<ParsedExpense> => {
     throw new Error("Failed to parse expense using AI.");
   }
 };
+
+export const getFinancialInsight = async (stats: { spent: number; topCategories: any[] }): Promise<string> => {
+  if (!process.env.GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY is missing.");
+  }
+  
+  const statsString = `
+    Total Monthly Spend: ₹${stats.spent}
+    Categories of Spend: ${stats.topCategories.map(c => `${c.category}: ₹${c.amount}`).join(', ')}
+  `;
+
+  try {
+    const response = await groq.chat.completions.create({
+      messages: [
+        { 
+          role: 'system', 
+          content: 'You are a world-class financial advisor. Analyze the user spend and provide a single, actionable, 2-sentence tip to save money or optimize their budget. Be encouraging but direct. Do not use markdown bolding.' 
+        },
+        { role: 'user', content: `Here is my spending breakdown: ${statsString}. Give me an insight.` }
+      ],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.7,
+      max_tokens: 100,
+    });
+
+    return response.choices[0]?.message?.content?.trim() || "You are doing great with your finances! Keep tracking your expenses to stay on top.";
+  } catch (err) {
+    console.error("AI Insight Error:", err);
+    return "Keep an eye on your top categories to find saving opportunities.";
+  }
+};

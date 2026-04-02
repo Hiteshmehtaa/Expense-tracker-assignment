@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { parseExpense } from '../services/aiService';
+import { parseExpense, getFinancialInsight } from '../services/aiService';
 import { createExpense, getAllExpenses, deleteExpense, updateExpense } from '../database/db';
 
 const router = Router();
@@ -74,6 +74,19 @@ router.put('/:id', (req: Request, res: Response) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update expense' });
+  }
+});
+
+router.post('/insight', async (req: Request, res: Response) => {
+  try {
+    const { stats } = req.body;
+    if (!stats) {
+      return res.status(400).json({ success: false, error: 'Stats are required' });
+    }
+    const insight = await getFinancialInsight(stats);
+    res.status(200).json({ success: true, insight });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to get AI insight' });
   }
 });
 
